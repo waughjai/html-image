@@ -1,0 +1,27 @@
+{
+    "name": "waughj/html-image",
+    "description": "Simple class for automatically generating image HTML code.",
+    "keywords": [ "image", "html", "autogenerate" ],
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Jaimeson Waugh",
+            "email": "waughjai@gmail.com"
+        }
+    ],
+    "type": "library",
+    "require": {
+		"php": ">=7.0",
+		"waughj/html-attribute-list": ">=1.0.1",
+		"waughj/test-hash-item": ">=1.0.1"
+    },
+    "require-dev": {
+		"phpunit/phpunit": "6.*",
+		"ngiusti/random-string-generator": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "WaughJ\\HTMLImage\\": "src/"
+        }
+    }
+}
