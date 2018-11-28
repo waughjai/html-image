@@ -24,4 +24,4 @@ If no alt attribute is passed in, an empty alt attribute will automatically be a
 	);
 	$image->print();
 
-Will output <img src="image.png" class="center-img ornate" width="600" height="400" />
+Will output `<img src="image.png" class="center-img ornate" width="600" height="400" />`
