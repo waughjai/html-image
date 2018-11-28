@@ -16,6 +16,16 @@ namespace WaughJ\HTMLImage
 			$this->attributes = new HTMLAttributeList( $this->attributes );
 		}
 
+		public function __toString()
+		{
+			return $this->getHTML();
+		}
+
+		public function print() : void
+		{
+			echo $this->getHTML();
+		}
+
 		public function getHTML() : string
 		{
 			return "<img{$this->attributes->getAttributesText()} />";
