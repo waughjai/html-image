@@ -1,6 +1,7 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+use WaughJ\FileLoader\FileLoader;
 use WaughJ\HTMLImage\HTMLImage;
 use RandomStringGenerator\RandomStringGenerator;
 
@@ -21,7 +22,7 @@ class HTMLImageTest extends TestCase
 		$this->assertContains( ' alt=""', $img1->getHTML() );
 		$img_2_name = $this->getRandomString();
 		$img2_alt = $this->getRandomString();
-		$img2 = new HTMLImage( "{$img_2_name}.png", [ "alt" => $img2_alt ] );
+		$img2 = new HTMLImage( "{$img_2_name}.png", null, [ "alt" => $img2_alt ] );
 		$this->assertContains( " alt=\"{$img2_alt}\"", $img2->getHTML() );
 	}
 
@@ -29,9 +30,17 @@ class HTMLImageTest extends TestCase
 	{
 		$class = $this->getRandomString();
 		$id = $this->getRandomString();
-		$img = new HTMLImage( "logo.png", [ 'class' => $class, 'id' => $id ] );
+		$img = new HTMLImage( "logo.png", null, [ 'class' => $class, 'id' => $id ] );
 		$this->assertContains( " class=\"{$class}\"", $img->getHTML() );
 		$this->assertContains( " id=\"{$id}\"", $img->getHTML() );
+	}
+
+	public function testWithFileLoader()
+	{
+		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests', 'extension' => 'png' ]);
+		$img = new HTMLImage( 'demo', $loader );
+		$this->assertContains( '<img', $img->getHTML() );
+		$this->assertContains( " src=\"https://www.example.com/tests/demo.png?m=", $img->getHTML() );
 	}
 
 	private function getRandomString() : string
