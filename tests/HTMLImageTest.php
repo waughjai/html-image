@@ -43,6 +43,14 @@ class HTMLImageTest extends TestCase
 		$this->assertContains( " src=\"https://www.example.com/tests/demo.png?m=", $img->getHTML() );
 	}
 
+	public function testGetSource()
+	{
+		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests', 'extension' => 'png' ]);
+		$img = new HTMLImage( 'demo', $loader );
+		$this->assertContains( '<img', $img->getHTML() );
+		$this->assertContains( "https://www.example.com/tests/demo.png?m=", $img->getSource() );
+	}
+
 	private function getRandomString() : string
 	{
 		$generator = new RandomStringGenerator();

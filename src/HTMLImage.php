@@ -36,7 +36,12 @@ namespace WaughJ\HTMLImage
 
 		public function getHTML() : string
 		{
-			return "<img src=\"{$this->getASource( $this->src )}\"{$this->attributes->getAttributesText()} />";
+			return "<img src=\"{$this->getSource()}\"{$this->attributes->getAttributesText()} />";
+		}
+
+		public function getSource() : string
+		{
+			return $this->getASource( $this->src );
 		}
 
 		private function adjustSrcSet( string $srcset ) : string

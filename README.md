@@ -29,3 +29,7 @@ If no alt attribute is passed in, an empty alt attribute will automatically be a
 	$image->print();
 
 Will output `<img src="https://www.example.com/image.png" class="center-img ornate" width="600" height="400" />`
+
+	echo $image->getSource();
+
+Will output `https://www.example.com/image.png`
