@@ -44,6 +44,20 @@ namespace WaughJ\HTMLImage
 			return $this->getASource( $this->src );
 		}
 
+		public function setAttribute( string $type, $value ) : HTMLImage
+		{
+			$new_attributes = $this->attributes->getAttributes();
+			$new_attributes[ $type ] = $value;
+			return new HTMLImage( $this->src, $this->loader, $new_attributes );
+		}
+
+		public function addToClass( $value ) : HTMLImage
+		{
+			$old_value = $this->attributes->getAttributeValue( 'class' );
+			$new_value = ( $old_value !== null ) ? "{$old_value} {$value}" : $value;
+			return $this->setAttribute( 'class', $new_value );
+		}
+
 		private function adjustSrcSet( string $srcset ) : string
 		{
 			$accepted_sources = [];
