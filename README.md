@@ -34,6 +34,8 @@ Will output `<img src="https://www.example.com/image.png" class="center-img orna
 
 Will output `https://www.example.com/image.png`
 
+### Changing Attributes o' Already-Existing Instances
+
 You can also set attributes or add classes to an already-created image using the "setAttribute" & "addToClass" methods:
 
 	$image = new HTMLImage
