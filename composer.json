@@ -12,7 +12,7 @@
     "type": "library",
     "require": {
 		"php": ">=7.0",
-		"waughj/html-attribute-list": ">=1.0.1",
+		"waughj/html-attribute-list": ">=1.1.0",
 		"waughj/test-hash-item": ">=1.1",
 		"waughj/file-loader": "*"
     },

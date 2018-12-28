@@ -46,7 +46,7 @@ namespace WaughJ\HTMLImage
 
 		public function setAttribute( string $type, $value ) : HTMLImage
 		{
-			$new_attributes = $this->attributes->getAttributes();
+			$new_attributes = $this->attributes->getAttributeValuesMap();
 			$new_attributes[ $type ] = $value;
 			return new HTMLImage( $this->src, $this->loader, $new_attributes );
 		}

@@ -43,8 +43,8 @@ class HTMLImageTest extends TestCase
 		$this->assertContains( " class=\"{$class}\"", $img->getHTML() );
 		$this->assertContains( " id=\"{$id}\"", $img->getHTML() );
 		$img = $img->addToClass( 'dagadon' );
-		$this->assertContains( " class=\"{$class} dagadon\"", $img->getHTML() );
 		$img = $img->setAttribute( 'id', 'dagadon' );
+		$this->assertContains( " class=\"{$class} dagadon\"", $img->getHTML() );
 		$this->assertContains( " id=\"dagadon\"", $img->getHTML() );
 	}
 
