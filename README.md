@@ -33,3 +33,23 @@ Will output `<img src="https://www.example.com/image.png" class="center-img orna
 	echo $image->getSource();
 
 Will output `https://www.example.com/image.png`
+
+You can also set attributes or add classes to an already-created image using the "setAttribute" & "addToClass" methods:
+
+	$image = new HTMLImage
+	(
+		'image.png',
+		new FileLoader([ 'directory-url' => 'https://www.example.com' ]),
+		[
+			'class' => 'center-img ornate',
+			'width' => '600',
+			'height' => '400'
+		]
+	);
+	$image = $image->addToClass( 'new-image' );
+	$image = $image->setAttribute( 'id', 'first-image' )
+	$image->print();
+
+Will output `<img src="https://www.example.com/image.png" class="center-img ornate new-image" id="first-image" width="600" height="400" />`
+
+Note that "setAttribute" & "addToClass" do not directly change object, which is immutable, but return a clone o' the image with the changes. Thus, if you want to change an object, you must set the object equal to the output o' the method call: `$image = $image->setAttribute( 'id', 'first-image' )`. Just `$image->setAttribute( 'id', 'first-image' )` won't do anything.
