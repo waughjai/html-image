@@ -40,13 +40,14 @@ class HTMLImageTest extends TestCase
 		$class = $this->getRandomString();
 		$id = $this->getRandomString();
 		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests', 'extension' => 'png' ]);
-		$img = new HTMLImage( "demo", $loader, [ 'class' => $class, 'id' => $id ] );
+		$img = new HTMLImage( "demo", $loader, [ 'class' => $class, 'id' => $id, 'srcset' => 'demo-300x300 300w, demo-800x500 800w, demo 1280w' ] );
 		$this->assertContains( " class=\"{$class}\"", $img->getHTML() );
 		$this->assertContains( " id=\"{$id}\"", $img->getHTML() );
 		$img = $img->addToClass( 'dagadon' )->setAttribute( 'id', 'dagadon' );
 		$this->assertContains( " class=\"{$class} dagadon\"", $img->getHTML() );
 		$this->assertContains( " id=\"dagadon\"", $img->getHTML() );
 		$this->assertContains( " src=\"https://www.example.com/tests/demo.png?m=", $img->getHTML() );
+		$this->assertContains( " srcset=\"https://www.example.com/tests/demo-300x300.png?m=", $img->getHTML() );
 	}
 
 	public function testAddToClassWithoutClass()

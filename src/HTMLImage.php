@@ -17,10 +17,15 @@ namespace WaughJ\HTMLImage
 			$this->attributes[ 'alt' ] = TestHashItemString( $this->attributes, 'alt', '' );
 			$this->show_version = !array_key_exists( 'show-version', $this->attributes ) || $this->attributes[ 'show-version' ];
 			unset( $this->attributes[ 'show-version' ] );
+
+			// Keep srcset separate so that we can treat it differently when generation HTML.
+			$this->srcset = null;
 			if ( isset( $this->attributes[ 'srcset' ] ) && is_string( $this->attributes[ 'srcset' ] ) )
 			{
-				$this->attributes[ 'srcset' ] = $this->adjustSrcSet( $this->attributes[ 'srcset' ] );
+				$this->srcset =$this->attributes[ 'srcset' ];
+				unset( $this->attributes[ 'srcset' ] );
 			}
+
 			$this->attributes = new HTMLAttributeList( $this->attributes );
 		}
 
@@ -36,7 +41,8 @@ namespace WaughJ\HTMLImage
 
 		public function getHTML() : string
 		{
-			return "<img src=\"{$this->getSource()}\"{$this->attributes->getAttributesText()} />";
+			$srcset_attr = ( $this->srcset !== null ) ? ' srcset="' . $this->adjustSrcSet( $this->srcset ) . '"' : '';
+			return "<img src=\"{$this->getSource()}\"{$srcset_attr}{$this->attributes->getAttributesText()} />";
 		}
 
 		public function getSource() : string
@@ -48,6 +54,7 @@ namespace WaughJ\HTMLImage
 		{
 			$new_attributes = $this->attributes->getAttributeValuesMap();
 			$new_attributes[ $type ] = $value;
+			$new_attributes[ 'srcset' ] = $this->srcset;
 			return new HTMLImage( $this->src, $this->loader, $new_attributes );
 		}
 
@@ -58,6 +65,7 @@ namespace WaughJ\HTMLImage
 			return $this->setAttribute( 'class', $new_value );
 		}
 
+		// Automatically apply file loader to srcset URLs.
 		private function adjustSrcSet( string $srcset ) : string
 		{
 			$accepted_sources = [];
