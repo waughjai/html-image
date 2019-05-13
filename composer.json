@@ -17,7 +17,7 @@
 		"waughj/file-loader": "*"
     },
     "require-dev": {
-		"phpunit/phpunit": "6.*",
+		"phpunit/phpunit": "*",
 		"ngiusti/random-string-generator": "*"
     },
     "autoload": {
