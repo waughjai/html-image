@@ -1,7 +1,10 @@
 <?php
 
+declare( strict_types = 1 );
+
 use PHPUnit\Framework\TestCase;
 use WaughJ\FileLoader\FileLoader;
+use WaughJ\FileLoader\MissingFileException;
 use WaughJ\HTMLImage\HTMLImage;
 use RandomStringGenerator\RandomStringGenerator;
 
@@ -65,6 +68,30 @@ class HTMLImageTest extends TestCase
 		$this->assertStringContainsString( " src=\"https://www.example.com/tests/demo.png?m=", $img->getHTML() );
 	}
 
+	public function testNonExistentFile()
+	{
+		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests', 'extension' => 'png' ]);
+		$html = null;
+		try
+		{
+			$image = new HTMLImage( 'jibber', $loader );
+			$html = $image->getHTML();
+		}
+		catch ( MissingFileException $e )
+		{
+			$html = $e->getFallbackContent();
+		}
+		$this->assertStringContainsString( '<img', $html );
+		$this->assertStringContainsString( " src=\"https://www.example.com/tests/jibber.png", $html );
+		$this->assertStringContainsString( ' alt=""', $html );
+
+		// Test auto string conversion.
+		// Can't throw, so it just automatically returns fallback content.
+		$image2 = new HTMLImage( 'alsonothere.png', $loader );
+		$this->assertStringContainsString( '<img', ( string )( $image2 ) );
+		$this->assertStringContainsString( " src=\"https://www.example.com/tests/alsonothere.png", ( string )( $image2 ) );
+	}
+
 	public function testGetSource()
 	{
 		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests', 'extension' => 'png' ]);
@@ -79,7 +106,7 @@ class HTMLImageTest extends TestCase
 		$img = new HTMLImage( 'demo', $loader, [ 'show-version' => false ] );
 		$this->assertStringContainsString( '<img', $img->getHTML() );
 		$this->assertStringContainsString( " src=\"https://www.example.com/tests/demo.png\"", $img->getHTML() );
-		$this->assertStringNotContainsString( " show-version=\"false\"", $img->getHTML() );
+		$this->assertStringNotContainsString( " show-version=\"", $img->getHTML() );
 	}
 
 	private function getRandomString() : string

@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 namespace WaughJ\HTMLImage
 {
 	use WaughJ\FileLoader\FileLoader;
+	use WaughJ\FileLoader\MissingFileException;
 	use WaughJ\HTMLAttributeList\HTMLAttributeList;
 	use function \WaughJ\TestHashItem\TestHashItemString;
 
@@ -31,7 +32,15 @@ namespace WaughJ\HTMLImage
 
 		public function __toString()
 		{
-			return $this->getHTML();
+			try
+			{
+				return $this->getHTML();
+			}
+			catch ( MissingFileException $e )
+			{
+				// __toString can't throw, so we must silently return fallback.
+				return $e->getFallbackContent();
+			}
 		}
 
 		public function print() : void
@@ -42,12 +51,24 @@ namespace WaughJ\HTMLImage
 		public function getHTML() : string
 		{
 			$srcset_attr = ( $this->srcset !== null ) ? ' srcset="' . $this->adjustSrcSet( $this->srcset ) . '"' : '';
-			return "<img src=\"{$this->getSource()}\"{$srcset_attr}{$this->attributes->getAttributesText()} />";
+			try
+			{
+				return "<img src=\"{$this->getSource()}\"{$srcset_attr}{$this->attributes->getAttributesText()} />";
+			}
+			catch ( MissingFileException $e )
+			{
+				throw new MissingFileException( $e->getFilename(), "<img src=\"{$this->getSourceVersionless()}\"{$srcset_attr}{$this->attributes->getAttributesText()} />" );
+			}
 		}
 
 		public function getSource() : string
 		{
 			return $this->getASource( $this->src );
+		}
+
+		public function getSourceVersionless() : string
+		{
+			return $this->getASourceVersionless( $this->src );
 		}
 
 		public function setAttribute( string $type, $value ) : HTMLImage
@@ -89,6 +110,13 @@ namespace WaughJ\HTMLImage
 					? $this->loader->getSourceWithVersion( $src )
 					: $this->loader->getSource( $src )
 				)
+				: $src;
+		}
+
+		private function getASourceVersionless( string $src ) : string
+		{
+			return ( $this->loader !== null )
+				? $this->loader->getSource( $src )
 				: $src;
 		}
 
