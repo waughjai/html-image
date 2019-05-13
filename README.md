@@ -60,15 +60,15 @@ Note that "setAttribute" & "addToClass" do not directly change object, which is 
 
 The getHTML method may throw a WaughJ\FileLoader\MissingFileException exception if it is set to show a version tag ( the default ) & it can't access the file to get its modified date ( usually caused by the file not being where it's expected to be ). This exception includes in its getFallbackContent method fallback HTML with the versionless source for easy recovery like so ( while the getFilename method can be used to find where it's trying to find the file on the server ):
 
-$html = null;
-try
-{
-	$html = $image->getHTML();
-}
-catch ( MissingFileException $e )
-{
-	// Maybe log somewhere that it couldn't find the file located @ $e->getFilename().
-	$html = $e->getFallbackContent(); // This will be the equivalent o' the image HTML with its 'show_version' property false.
-}
+	$html = null;
+	try
+	{
+		$html = $image->getHTML();
+	}
+	catch ( MissingFileException $e )
+	{
+		// Maybe log somewhere that it couldn't find the file located @ $e->getFilename().
+		$html = $e->getFallbackContent(); // This will be the equivalent o' the image HTML with its 'show_version' property false.
+	}
 
 Since the toString method can't throw exceptions, converting an image to a string through ( string )( $image ) or such will just automatically return the fallback without throwing any exceptions or showing any errors.
