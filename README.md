@@ -55,3 +55,20 @@ You can also set attributes or add classes to an already-created image using the
 Will output `<img src="https://www.example.com/image.png" class="center-img ornate new-image" id="first-image" width="600" height="400" />`
 
 Note that "setAttribute" & "addToClass" do not directly change object, which is immutable, but return a clone o' the image with the changes. Thus, if you want to change an object, you must set the object equal to the output o' the method call: `$image = $image->setAttribute( 'id', 'first-image' )`. Just `$image->setAttribute( 'id', 'first-image' )` won't do anything.
+
+### Error Handling
+
+The getHTML method may throw a WaughJ\FileLoader\MissingFileException exception if it is set to show a version tag ( the default ) & it can't access the file to get its modified date ( usually caused by the file not being where it's expected to be ). This exception includes in its getFallbackContent method fallback HTML with the versionless source for easy recovery like so ( while the getFilename method can be used to find where it's trying to find the file on the server ):
+
+$html = null;
+try
+{
+	$html = $image->getHTML();
+}
+catch ( MissingFileException $e )
+{
+	// Maybe log somewhere that it couldn't find the file located @ $e->getFilename().
+	$html = $e->getFallbackContent(); // This will be the equivalent o' the image HTML with its 'show_version' property false.
+}
+
+Since the toString method can't throw exceptions, converting an image to a string through ( string )( $image ) or such will just automatically return the fallback without throwing any exceptions or showing any errors.
