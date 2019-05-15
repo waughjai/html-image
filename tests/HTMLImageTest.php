@@ -42,15 +42,15 @@ class HTMLImageTest extends TestCase
 	{
 		$class = $this->getRandomString();
 		$id = $this->getRandomString();
-		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests', 'extension' => 'png' ]);
+		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests/img', 'extension' => 'png' ]);
 		$img = new HTMLImage( "demo", $loader, [ 'class' => $class, 'id' => $id, 'srcset' => 'demo-300x300 300w, demo-800x500 800w, demo 1280w' ] );
 		$this->assertStringContainsString( " class=\"{$class}\"", $img->getHTML() );
 		$this->assertStringContainsString( " id=\"{$id}\"", $img->getHTML() );
 		$img = $img->addToClass( 'dagadon' )->setAttribute( 'id', 'dagadon' );
 		$this->assertStringContainsString( " class=\"{$class} dagadon\"", $img->getHTML() );
 		$this->assertStringContainsString( " id=\"dagadon\"", $img->getHTML() );
-		$this->assertStringContainsString( " src=\"https://www.example.com/tests/demo.png?m=", $img->getHTML() );
-		$this->assertStringContainsString( " srcset=\"https://www.example.com/tests/demo-300x300.png?m=", $img->getHTML() );
+		$this->assertStringContainsString( " src=\"https://www.example.com/tests/img/demo.png?m=", $img->getHTML() );
+		$this->assertStringContainsString( " srcset=\"https://www.example.com/tests/img/demo-300x300.png?m=", $img->getHTML() );
 	}
 
 	public function testAddToClassWithoutClass()
@@ -62,15 +62,15 @@ class HTMLImageTest extends TestCase
 
 	public function testWithFileLoader()
 	{
-		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests', 'extension' => 'png' ]);
+		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests/img', 'extension' => 'png' ]);
 		$img = new HTMLImage( 'demo', $loader );
 		$this->assertStringContainsString( '<img', $img->getHTML() );
-		$this->assertStringContainsString( " src=\"https://www.example.com/tests/demo.png?m=", $img->getHTML() );
+		$this->assertStringContainsString( " src=\"https://www.example.com/tests/img/demo.png?m=", $img->getHTML() );
 	}
 
 	public function testNonExistentFile()
 	{
-		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests', 'extension' => 'png' ]);
+		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests/img', 'extension' => 'png' ]);
 		$html = null;
 		try
 		{
@@ -82,30 +82,30 @@ class HTMLImageTest extends TestCase
 			$html = $e->getFallbackContent();
 		}
 		$this->assertStringContainsString( '<img', $html );
-		$this->assertStringContainsString( " src=\"https://www.example.com/tests/jibber.png", $html );
+		$this->assertStringContainsString( " src=\"https://www.example.com/tests/img/jibber.png", $html );
 		$this->assertStringContainsString( ' alt=""', $html );
 
 		// Test auto string conversion.
 		// Can't throw, so it just automatically returns fallback content.
 		$image2 = new HTMLImage( 'alsonothere.png', $loader );
 		$this->assertStringContainsString( '<img', ( string )( $image2 ) );
-		$this->assertStringContainsString( " src=\"https://www.example.com/tests/alsonothere.png", ( string )( $image2 ) );
+		$this->assertStringContainsString( " src=\"https://www.example.com/tests/img/alsonothere.png", ( string )( $image2 ) );
 	}
 
 	public function testGetSource()
 	{
-		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests', 'extension' => 'png' ]);
+		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests/img', 'extension' => 'png' ]);
 		$img = new HTMLImage( 'demo', $loader );
 		$this->assertStringContainsString( '<img', $img->getHTML() );
-		$this->assertStringContainsString( "https://www.example.com/tests/demo.png?m=", $img->getSource() );
+		$this->assertStringContainsString( "https://www.example.com/tests/img/demo.png?m=", $img->getSource() );
 	}
 
 	public function testWithoutVersioning()
 	{
-		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests', 'extension' => 'png' ]);
+		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests/img', 'extension' => 'png' ]);
 		$img = new HTMLImage( 'demo', $loader, [ 'show-version' => false ] );
 		$this->assertStringContainsString( '<img', $img->getHTML() );
-		$this->assertStringContainsString( " src=\"https://www.example.com/tests/demo.png\"", $img->getHTML() );
+		$this->assertStringContainsString( " src=\"https://www.example.com/tests/img/demo.png\"", $img->getHTML() );
 		$this->assertStringNotContainsString( " show-version=\"", $img->getHTML() );
 	}
 
