@@ -15,33 +15,30 @@ class HTMLImage
 	//
 	//////////////////////////////////////////////////////////
 
-		public function __construct( string $src, FileLoader $loader = null, array $other_attributes = [] )
+		public function __construct( string $local_src, FileLoader $loader = null, array $other_attributes = [] )
 		{
-			$this->attributes = $other_attributes;
-			$this->src = $src;
-			$this->loader = $loader;
-			$this->attributes[ 'alt' ] = TestHashItemString( $this->attributes, 'alt', '' );
-			$this->show_version = !array_key_exists( 'show-version', $this->attributes ) || $this->attributes[ 'show-version' ];
-			unset( $this->attributes[ 'show-version' ] );
-
-			// Keep srcset separate so that we can treat it differently when generation HTML.
-			$this->srcset = null;
-			if ( isset( $this->attributes[ 'srcset' ] ) && is_string( $this->attributes[ 'srcset' ] ) )
-			{
-				$this->srcset =$this->attributes[ 'srcset' ];
-				unset( $this->attributes[ 'srcset' ] );
-			}
-			$this->attributes = new HTMLAttributeList( $this->attributes );
-
-			$srcset_attr = ( $this->srcset !== null ) ? ' srcset="' . $this->adjustSrcSet( $this->srcset ) . '"' : '';
+			$show_version = self::testShowVersionAttribute( $other_attributes );
+			$absolute_src_versionless = self::generateSourceVersionless( $local_src, $loader );
 			try
 			{
-				$this->html = "<img src=\"{$this->getSource()}\"{$srcset_attr}{$this->attributes->getAttributesText()} />";
+				$srcset = new SrcSet( $other_attributes[ 'srcset' ] ?? null );
+				$other_attributes[ 'alt' ] = TestHashItemString( $other_attributes, 'alt', '' );
+
+				unset( $other_attributes[ 'show-version' ] ); // We don't want this to accidentally become an HTML attribute.
+				unset( $other_attributes[ 'srcset' ] ); // Due to the complexity o' sources & the file loader, we handle this attribute manually.
+
+				$this->show_version = $show_version;
+				$this->local_src = $local_src;
+				$this->attributes = new HTMLAttributeList( $other_attributes );
+				$this->absolute_src = self::generateSource( $local_src, $loader, $show_version );
+				$this->absolute_src_versionless = $absolute_src_versionless;
+				$this->srcset = $srcset;
+				$this->loader = $loader;
+				$this->html = "<img src=\"{$this->absolute_src}\"{$this->srcset->getAttributeText( $loader, $show_version )}{$this->attributes->getAttributesText()} />";
 			}
 			catch ( MissingFileException $e )
 			{
-				$this->html = "<img src=\"{$this->getSourceVersionless()}\"{$srcset_attr}{$this->attributes->getAttributesText()} />";
-				throw new MissingFileException( $e->getFilename(), $this );
+				throw new MissingFileException( $e->getFilename(), new HTMLImage( $absolute_src_versionless, null, $other_attributes ) );
 			}
 		}
 
@@ -62,20 +59,19 @@ class HTMLImage
 
 		public function getSource() : string
 		{
-			return $this->getASource( $this->src );
+			return $this->absolute_src;
 		}
 
 		public function getSourceVersionless() : string
 		{
-			return $this->getASourceVersionless( $this->src );
+			return $this->absolute_src_versionless;
 		}
 
 		public function setAttribute( string $type, $value ) : HTMLImage
 		{
-			$new_attributes = $this->attributes->getAttributeValuesMap();
+			$new_attributes = $this->getOriginalArguments();
 			$new_attributes[ $type ] = $value;
-			$new_attributes[ 'srcset' ] = $this->srcset;
-			return new HTMLImage( $this->src, $this->loader, $new_attributes );
+			return new HTMLImage( $this->local_src, $this->loader, $new_attributes );
 		}
 
 		public function addToClass( $value ) : HTMLImage
@@ -85,6 +81,19 @@ class HTMLImage
 			return $this->setAttribute( 'class', $new_value );
 		}
 
+		public function changeLoader( $loader ) : HTMLImage
+		{
+			$new_attributes = $this->getOriginalArguments();
+			return new HTMLImage( $this->local_src, $loader, $new_attributes );
+		}
+
+		// Lots o' classes based on this will need to use this.
+		public static function testShowVersionAttribute( array $attributes ) : bool
+		{
+			// Defaults to true if not set.
+			return ( bool )( $attributes[ 'show-version' ] ?? true );
+		}
+
 
 
 	//
@@ -92,8 +101,16 @@ class HTMLImage
 	//
 	//////////////////////////////////////////////////////////
 
+		private function getOriginalArguments() : array
+		{
+			$arguments = $this->attributes->getAttributeValuesMap();
+			$arguments[ 'srcset' ] = $this->srcset;
+			$arguments[ 'show-version' ] = $this->show_version;
+			return $arguments;
+		}
+
 		// Automatically apply file loader to srcset URLs.
-		private function adjustSrcSet( string $srcset ) : string
+		private static function adjustSrcSet( string $srcset, $loader, bool $show_version ) : string
 		{
 			$accepted_sources = [];
 			$sources = preg_split( "/,[\s]*/", $srcset );
@@ -102,33 +119,36 @@ class HTMLImage
 				$parts = explode( ' ', $source );
 				$width = $parts[ count( $parts ) - 1 ];
 				array_pop( $parts );
-				$filename = $this->getASource( implode( '', $parts ) );
+				$filename = self::generateSource( implode( '', $parts ), $loader, $show_version );
 				array_push( $accepted_sources, "$filename $width" );
 			}
 			return implode( ', ', $accepted_sources );
 		}
 
-		private function getASource( string $src ) : string
+		private static function generateSource( string $src, $loader, bool $show_version ) : string
 		{
-			return ( $this->loader !== null )
+			return ( $loader !== null )
 				? (
-					( $this->show_version )
-					? $this->loader->getSourceWithVersion( $src )
-					: $this->loader->getSource( $src )
+					( $show_version )
+					? $loader->getSourceWithVersion( $src )
+					: $loader->getSource( $src )
 				)
 				: $src;
 		}
 
-		private function getASourceVersionless( string $src ) : string
+		private static function generateSourceVersionless( string $src, $loader ) : string
 		{
-			return ( $this->loader !== null )
-				? $this->loader->getSource( $src )
+			return ( $loader !== null )
+				? $loader->getSource( $src )
 				: $src;
 		}
 
-		private $src;
-		private $loader;
-		private $attributes;
 		private $show_version;
+		private $local_src;
+		private $srcset;
+		private $attributes;
+		private $absolute_src;
+		private $absolute_src_versionless;
 		private $html;
+		private $loader;
 }
