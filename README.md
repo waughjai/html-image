@@ -58,17 +58,31 @@ Note that "setAttribute" & "addToClass" do not directly change object, which is 
 
 ### Error Handling
 
-The getHTML method may throw a WaughJ\FileLoader\MissingFileException exception if it is set to show a version tag ( the default ) & it can't access the file to get its modified date ( usually caused by the file not being where it's expected to be ). This exception includes in its getFallbackContent method fallback HTML with the versionless source for easy recovery like so ( while the getFilename method can be used to find where it's trying to find the file on the server ):
+The HTMLImage constructor may throw a WaughJ\FileLoader\MissingFileException exception if it is set to show a version tag ( the default ) & it can't access the file to get its modified date ( usually caused by the file not being where it's expected to be ). This exception includes in its getFallbackContent method with an HTMLImage object with the versionless source for easy recovery like so ( while the getFilename method can be used to find where it's trying to find the file on the server ):
 
-	$html = null;
+	use WaughJ\HTMLImage\HTMLImage;
+	use WaughJ\FileLoader\FileLoader;
+	use WaughJ\FileLoader\MissingFileException;
+
 	try
 	{
-		$html = $image->getHTML();
+		$image = new HTMLImage
+		(
+			'image.png',
+			new FileLoader([ 'directory-url' => 'https://www.example.com' ]),
+			[
+				'class' => 'center-img ornate',
+				'width' => '600',
+				'height' => '400'
+			]
+		);
 	}
 	catch ( MissingFileException $e )
 	{
 		// Maybe log somewhere that it couldn't find the file located @ $e->getFilename().
-		$html = $e->getFallbackContent(); // This will be the equivalent o' the image HTML with its 'show_version' property false.
+		$image = $e->getFallbackContent(); // This will be the equivalent o' the image HTML with its 'show_version' property false.
 	}
+
+	$image->print(); // Will still work, e'en if an exception is thrown.
 
 Since the toString method can't throw exceptions, converting an image to a string through ( string )( $image ) or such will just automatically return the fallback without throwing any exceptions or showing any errors.

@@ -71,25 +71,18 @@ class HTMLImageTest extends TestCase
 	public function testNonExistentFile()
 	{
 		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests/img', 'extension' => 'png' ]);
-		$html = null;
+		$image = null;
 		try
 		{
 			$image = new HTMLImage( 'jibber', $loader );
-			$html = $image->getHTML();
 		}
 		catch ( MissingFileException $e )
 		{
-			$html = $e->getFallbackContent();
+			$image = $e->getFallbackContent();
 		}
-		$this->assertStringContainsString( '<img', $html );
-		$this->assertStringContainsString( " src=\"https://www.example.com/tests/img/jibber.png", $html );
-		$this->assertStringContainsString( ' alt=""', $html );
-
-		// Test auto string conversion.
-		// Can't throw, so it just automatically returns fallback content.
-		$image2 = new HTMLImage( 'alsonothere.png', $loader );
-		$this->assertStringContainsString( '<img', ( string )( $image2 ) );
-		$this->assertStringContainsString( " src=\"https://www.example.com/tests/img/alsonothere.png", ( string )( $image2 ) );
+		$this->assertStringContainsString( '<img', $image->getHTML() );
+		$this->assertStringContainsString( " src=\"https://www.example.com/tests/img/jibber.png", $image->getHTML() );
+		$this->assertStringContainsString( ' alt=""', $image->getHTML() );
 	}
 
 	public function testGetSource()
