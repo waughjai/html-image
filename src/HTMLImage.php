@@ -17,29 +17,55 @@ class HTMLImage
 
 		public function __construct( string $local_src, FileLoader $loader = null, array $other_attributes = [] )
 		{
-			$show_version = self::testShowVersionAttribute( $other_attributes );
+			$missing_files = [];
 			$absolute_src_versionless = self::generateSourceVersionless( $local_src, $loader );
+			$show_version = self::testShowVersionAttribute( $other_attributes );
+
 			try
 			{
-				$srcset = new SrcSet( $other_attributes[ 'srcset' ] ?? null );
-				$other_attributes[ 'alt' ] = TestHashItemString( $other_attributes, 'alt', '' );
-
-				unset( $other_attributes[ 'show-version' ] ); // We don't want this to accidentally become an HTML attribute.
-				unset( $other_attributes[ 'srcset' ] ); // Due to the complexity o' sources & the file loader, we handle this attribute manually.
-
-				$this->show_version = $show_version;
-				$this->local_src = $local_src;
-				$this->attributes = new HTMLAttributeList( $other_attributes );
-				$this->absolute_src = self::generateSource( $local_src, $loader, $show_version );
-				$this->absolute_src_versionless = $absolute_src_versionless;
-				$this->srcset = $srcset;
-				$this->loader = $loader;
-				$this->html = "<img src=\"{$this->absolute_src}\"{$this->srcset->getAttributeText( $loader, $show_version )}{$this->attributes->getAttributesText()} />";
+				$absolute_src = self::generateSource( $local_src, $loader, $show_version );
 			}
 			catch ( MissingFileException $e )
 			{
-				throw new MissingFileException( $e->getFilename(), new HTMLImage( $absolute_src_versionless, null, $other_attributes ) );
+				$missing_files[] = $e->getFilename();
 			}
+
+			try
+			{
+				$srcset = new SrcSet( $other_attributes[ 'srcset' ] ?? null, $loader, $show_version );
+			}
+			catch ( MissingFileException $e )
+			{
+				$missing_files[] = $e->getFilename();
+			}
+
+			if ( !empty( $missing_files ) )
+			{
+				$other_attributes[ 'show-version' ] = false;
+				throw new MissingFileException( $missing_files, new HTMLImage( $local_src, $loader, $other_attributes ) );
+			}
+
+			// Finally set properties.
+			$this->original_arguments = $other_attributes;
+			$this->local_src = $local_src;
+			$this->absolute_src_versionless = $absolute_src_versionless;
+			$this->absolute_src = $absolute_src;
+			$this->loader = $loader;
+			$this->html = self::generateHTML( $absolute_src, $srcset, $other_attributes );
+		}
+
+		private static function generateHTML( string $src, SrcSet $srcset, array $other_arguments )
+		{
+			$html_attributes = self::configureHTMLAttributes( $other_arguments );
+			return "<img src=\"{$src}\"{$srcset->getAttributeText()}{$html_attributes->getAttributesText()} />";
+		}
+
+		private static function configureHTMLAttributes( array $other_arguments ) : HTMLAttributeList
+		{
+			$other_arguments[ 'alt' ] = TestHashItemString( $other_arguments, 'alt', '' );
+			unset( $other_arguments[ 'show-version' ] ); // We don't want this to accidentally become an HTML attribute.
+			unset( $other_arguments[ 'srcset' ] ); // Due to the complexity o' sources & the file loader, we handle this attribute manually.
+			return new HTMLAttributeList( $other_arguments );
 		}
 
 		public function __toString()
@@ -69,22 +95,21 @@ class HTMLImage
 
 		public function setAttribute( string $type, $value ) : HTMLImage
 		{
-			$new_attributes = $this->getOriginalArguments();
+			$new_attributes = $this->original_arguments;
 			$new_attributes[ $type ] = $value;
 			return new HTMLImage( $this->local_src, $this->loader, $new_attributes );
 		}
 
 		public function addToClass( $value ) : HTMLImage
 		{
-			$old_value = $this->attributes->getAttributeValue( 'class' );
+			$old_value = self::configureHTMLAttributes( $this->original_arguments )->getAttributeValue( 'class' );
 			$new_value = ( $old_value !== null ) ? "{$old_value} {$value}" : $value;
 			return $this->setAttribute( 'class', $new_value );
 		}
 
 		public function changeLoader( $loader ) : HTMLImage
 		{
-			$new_attributes = $this->getOriginalArguments();
-			return new HTMLImage( $this->local_src, $loader, $new_attributes );
+			return new HTMLImage( $this->local_src, $loader, $this->original_arguments );
 		}
 
 		// Lots o' classes based on this will need to use this.
@@ -100,30 +125,6 @@ class HTMLImage
 	//  PRIVATE
 	//
 	//////////////////////////////////////////////////////////
-
-		private function getOriginalArguments() : array
-		{
-			$arguments = $this->attributes->getAttributeValuesMap();
-			$arguments[ 'srcset' ] = $this->srcset;
-			$arguments[ 'show-version' ] = $this->show_version;
-			return $arguments;
-		}
-
-		// Automatically apply file loader to srcset URLs.
-		private static function adjustSrcSet( string $srcset, $loader, bool $show_version ) : string
-		{
-			$accepted_sources = [];
-			$sources = preg_split( "/,[\s]*/", $srcset );
-			foreach ( $sources as $source )
-			{
-				$parts = explode( ' ', $source );
-				$width = $parts[ count( $parts ) - 1 ];
-				array_pop( $parts );
-				$filename = self::generateSource( implode( '', $parts ), $loader, $show_version );
-				array_push( $accepted_sources, "$filename $width" );
-			}
-			return implode( ', ', $accepted_sources );
-		}
 
 		private static function generateSource( string $src, $loader, bool $show_version ) : string
 		{
@@ -143,12 +144,10 @@ class HTMLImage
 				: $src;
 		}
 
-		private $show_version;
 		private $local_src;
-		private $srcset;
-		private $attributes;
 		private $absolute_src;
 		private $absolute_src_versionless;
 		private $html;
 		private $loader;
+		private $original_arguments;
 }

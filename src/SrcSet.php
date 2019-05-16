@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 namespace WaughJ\HTMLImage;
 
 use WaughJ\FileLoader\FileLoader;
+use WaughJ\FileLoader\MissingFileException;
 
 class SrcSet
 {
@@ -12,24 +13,30 @@ class SrcSet
 	//
 	//////////////////////////////////////////////////////////
 
-		public function __construct( $srcset )
+		public function __construct( $srcset, $loader = null, $show_version = null )
 		{
-			$this->sources =
-				    ( self::testIsThisType( $srcset ) ) ? $srcset->getSources()
-				: ( ( is_string( $srcset ) )            ? self::generateSrcSetFromString( $srcset )
-				: ( ( is_array( $srcset )  )            ? self::generateSrcSetFromArray( $srcset )
-										                : [] ));
+			try
+			{
+				$this->sources =
+					    ( self::testIsThisType( $srcset ) ) ? self::applyLoaderToList( $srcset->getSources(), $loader, $show_version )
+					: ( ( is_string( $srcset ) )            ? self::generateSrcSetFromString( $srcset, $loader, $show_version )
+					: ( ( is_array( $srcset )  )            ? self::generateSrcSetFromArray( $srcset, $loader, $show_version )
+											                : [] ));
+			}
+			catch ( MissingFileException $e )
+			{
+				throw new MissingFileException( $e->getFilename(), new SrcSet( $e->getFallbackContent() ) );
+			}
 		}
 
-		public function getAttributeText( $loader, bool $show_version = false ) : string
+		public function getAttributeText() : string
 		{
-			return ( !empty( $this->sources ) ) ? " srcset=\"{$this->getSourcesText( $loader, $show_version )}\"" : '';
+			return ( !empty( $this->sources ) ) ? " srcset=\"{$this->getSourcesText()}\"" : '';
 		}
 
-		public function getSourcesText( $loader, bool $show_version = false ) : string
+		public function getSourcesText() : string
 		{
-			$sources = ( $show_version && is_object( $loader ) && get_class( $loader ) === FileLoader::class ) ? $this->configureSourcesWithFileLoader( $loader ) : $this->sources;
-			return implode( ', ', $sources );
+			return implode( ', ', $this->sources );
 		}
 
 		public function getSources() : array
@@ -44,45 +51,50 @@ class SrcSet
 	//
 	//////////////////////////////////////////////////////////
 
-		private function configureSourcesWithFileLoader( FileLoader $loader ) : array
+		private static function generateSrcSetFromArray( array $srcset, $loader, $show_version ) : array
 		{
-			$new_list = [];
-			foreach ( $this->sources as $source )
-			{
-				$new_list[] = self::generateSrcSetItemFromString( $loader->getSourceWithVersion( $source->getFilename() ) . ' ' . $source->getWidthTag() );
-			}
-			return $new_list;
-		}
-
-		private static function generateSrcSetFromArray( array $srcset ) : array
-		{
+			$missing_files = [];
 			$list = [];
 			foreach ( $srcset as $source )
 			{
-				if ( is_object( $source ) && get_class( $source ) === SrcSetItem::class )
+				try
 				{
-					$list[] = $source;
+					if ( is_object( $source ) && get_class( $source ) === SrcSetItem::class )
+					{
+						if ( $show_version !== null )
+						{
+							$source = $source->setShowVersion( $show_version );
+						}
+						$list[] = ( $loader !== null ) ? $source->applyLoader( $loader ) : $source;
+					}
+					else if ( is_string( $source ) )
+					{
+						$list[] = self::generateSrcSetItemFromString( $source, $loader, $show_version );
+					}
 				}
-				else if ( is_string( $source ) )
+				catch ( MissingFileException $e )
 				{
-					$list[] = self::generateSrcSetItemFromString( $source );
+					$missing_files[] = $e->getFilename();
+					$list[] = $e->getFallbackContent();
 				}
 			}
+
+			if ( !empty( $missing_files ) )
+			{
+				throw new MissingFileException( $missing_files, $list );
+			}
+
 			return $list;
 		}
 
-		private static function generateSrcSetFromString( string $srcset ) : array
+		private static function generateSrcSetFromString( string $srcset, $loader, $show_version ) : array
 		{
 			$list = [];
 			$string_list = preg_split( "/,[\s]*/", $srcset );
-			foreach ( $string_list as $string )
-			{
-				$list[] = self::generateSrcSetItemFromString( $string );
-			}
-			return $list;
+			return self::generateSrcSetFromArray( $string_list, $loader, $show_version );
 		}
 
-		private static function generateSrcSetItemFromString( string $source_string ) : SrcSetItem
+		private static function generateSrcSetItemFromString( string $source_string, $loader, $show_version ) : SrcSetItem
 		{
 			$parts = explode( ' ', $source_string );
 			if ( count( $parts ) < 2 )
@@ -106,17 +118,20 @@ class SrcSet
 			while ( true )
 			{
 				$question_mark_divided = explode( '?', $filename );
-				$without_question_marks = array_splice( $question_mark_divided, 0, 1 )[ 0 ];
+				$without_question_marks = array_splice( $question_mark_divided, 0, 1 )[ 0 ]; // Get all text left o' 1st ? or everything if there are no ?.
 
 				$period_divided = explode( '.', $without_question_marks );
 
-				if ( self::testNoDivision( $period_divided ) ) { break; }
-
-				// Take out all text left o' 1st period as extensionless filename.
-				$extensionless_filename = array_splice( $period_divided, 0, 1 ); // Returns array with all items in 1 string as the only item...
-				if ( count( $extensionless_filename ) === 0 ) { break; } // ...'less the string is malformed with just a starting period & text afterward, in which case we give up.
-				$extensionless_filename = $extensionless_filename[ 0 ]; // Turn array into string.
-				$extension_str = implode( '.', $period_divided ); // All the rest is reconnected with dots & set as extension.
+				$extensionless_filename = $without_question_marks;
+				if ( !self::testNoDivision( $period_divided ) )
+				{
+					// Take out all text left o' 1st period as extensionless filename.
+					$extensionless_filename = array_splice( $period_divided, 0, 1 ); // Returns array with all items in 1 string as the only item...
+					if ( count( $extensionless_filename ) === 0 ) { break; } // ...'less the string is malformed with just a starting period & text afterward, in which case we give up.
+					$extensionless_filename = $extensionless_filename[ 0 ]; // Turn array into string.
+					$extension = implode( '.', $period_divided ); // All the rest is reconnected with dots & set as extension.
+					$base_filename = $extensionless_filename;
+				}
 
 				$x_divided = explode( 'x', $extensionless_filename ); // Now split by "x" to get height.
 
@@ -134,13 +149,26 @@ class SrcSet
 
 				// String is valid, & so we set fallback data with newly-found data.
 				$base_filename = implode( '-', $hyphen_divided ); // All the remaining text after all the previous extractions.
-				$extension = $extension_str;
 				$width = $width1;
 				$height = $height_str;
 				break;
 			}
 
-			return new SrcSetItem( $base_filename, $extension, $width, $height );
+			return new SrcSetItem( $base_filename, $width, $height, $extension, $loader, $show_version ?? true );
+		}
+
+		private static function applyLoaderToList( array $srcset, $loader, $show_version ) : array
+		{
+			$new_list = [];
+			foreach ( $srcset as $source )
+			{
+				if ( $show_version !== null )
+				{
+					$source = $source->setShowVersion( $show_version );
+				}
+				$new_list[] = ( $loader !== null ) ? $source->applyLoader( $loader ) : $source;
+			}
+			return $new_list;
 		}
 
 		private static function testNoDivision( array $array ) : bool

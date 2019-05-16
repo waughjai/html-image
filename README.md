@@ -40,8 +40,8 @@ You can also set attributes or add classes to an already-created image using the
 
 	$image = new HTMLImage
 	(
-		'image.png',
 		new FileLoader([ 'directory-url' => 'https://www.example.com' ]),
+		'image.png',
 		[
 			'class' => 'center-img ornate',
 			'width' => '600',
@@ -80,9 +80,7 @@ The HTMLImage constructor may throw a WaughJ\FileLoader\MissingFileException exc
 	catch ( MissingFileException $e )
 	{
 		// Maybe log somewhere that it couldn't find the file located @ $e->getFilename().
-		$image = $e->getFallbackContent(); // This will be the equivalent o' the image HTML with its 'show_version' property false.
+		$image = $e->getFallbackContent(); // This will be the equivalent o' the image with its 'show_version' property false.
 	}
 
 	$image->print(); // Will still work, e'en if an exception is thrown.
-
-Since the toString method can't throw exceptions, converting an image to a string through ( string )( $image ) or such will just automatically return the fallback without throwing any exceptions or showing any errors.
