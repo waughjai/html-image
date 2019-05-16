@@ -102,7 +102,7 @@ class HTMLImage
 
 		public function addToClass( $value ) : HTMLImage
 		{
-			$old_value = self::configureHTMLAttributes( $this->original_arguments )->getAttributeValue( 'class' );
+			$old_value = $this->original_arguments[ 'class' ] ?? null;
 			$new_value = ( $old_value !== null ) ? "{$old_value} {$value}" : $value;
 			return $this->setAttribute( 'class', $new_value );
 		}
