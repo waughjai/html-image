@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use WaughJ\FileLoader\FileLoader;
 use WaughJ\FileLoader\MissingFileException;
 use WaughJ\HTMLImage\HTMLImage;
+use WaughJ\HTMLImage\MalformedSrcSetStringException;
 use WaughJ\HTMLImage\SrcSetItem;
 use RandomStringGenerator\RandomStringGenerator;
 
@@ -65,6 +66,12 @@ class HTMLImageTest extends TestCase
 		$image = $image->setAttribute( 'srcset', [ new SrcSetItem( 'demo', 300, 300, 'png' ), new SrcSetItem( 'demo', 800, 500, 'png' ) ] );
 		$this->assertStringContainsString( " srcset=\"https://www.example.com/tests/img/demo-300x300.png?m=", $image->getHTML() );
 		$this->assertStringContainsString( "300w, https://www.example.com/tests/img/demo-800x500.png?m=", $image->getHTML() );
+	}
+
+	public function testMalformedSrcSet()
+	{
+		$this->expectException( MalformedSrcSetStringException::class );
+		$image = new HTMLImage( "demo.png", null, [ 'srcset' => 'demo-300x300.png, demo-800x500.png 800w, demo.png 1280w' ] );
 	}
 
 	public function testAttributeChanges()
