@@ -27,6 +27,7 @@ class HTMLImage
 			}
 			catch ( MissingFileException $e )
 			{
+				$absolute_src = $e->getFallbackContent();
 				$missing_files[] = $e->getFilename();
 			}
 
@@ -36,13 +37,8 @@ class HTMLImage
 			}
 			catch ( MissingFileException $e )
 			{
-				$missing_files[] = $e->getFilename();
-			}
-
-			if ( !empty( $missing_files ) )
-			{
-				$other_attributes[ 'show-version' ] = false;
-				throw new MissingFileException( $missing_files, new HTMLImage( $local_src, $loader, $other_attributes ) );
+				$srcset = $e->getFallbackContent();
+				array_merge( $missing_files, $e->getFilename() );
 			}
 
 			// Finally set properties.
@@ -52,6 +48,11 @@ class HTMLImage
 			$this->absolute_src = $absolute_src;
 			$this->loader = $loader;
 			$this->html = self::generateHTML( $absolute_src, $srcset, $other_attributes );
+
+			if ( !empty( $missing_files ) )
+			{
+				throw new MissingFileException( $missing_files, $this );
+			}
 		}
 
 		private static function generateHTML( string $src, SrcSet $srcset, array $other_arguments )
