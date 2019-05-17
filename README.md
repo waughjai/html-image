@@ -56,6 +56,67 @@ Will output `<img src="https://www.example.com/image.png" class="center-img orna
 
 Note that "setAttribute" & "addToClass" do not directly change object, which is immutable, but return a clone o' the image with the changes. Thus, if you want to change an object, you must set the object equal to the output o' the method call: `$image = $image->setAttribute( 'id', 'first-image' )`. Just `$image->setAttribute( 'id', 'first-image' )` won't do anything.
 
+### Responsive Images
+
+HTMLImage makes setting srcset & sizes for responsive images easier & mo’ convenient.
+
+For instance, if srcset is set, but not sizes, the constructor will automatically generate a sizes attribute based on how srcset is set, which will regenerate if srcset is changed later, but will ne’er o’erride manually-set sizes.
+
+Example:
+
+	use WaughJ\HTMLImage\HTMLImage;
+
+	$image = new HTMLImage
+	(
+		"demo.png",
+		null,
+		[ 'srcset' => 'demo-300x300.png 300w, demo-800x500.png 800w, demo.png 1280w' ]
+	);
+
+	// Will output “<img src="demo.png" srcset="demo-300x300.png 300w, demo-800x500.png 800w, demo.png 1280w" sizes="(max-width: 300px) 300px, (max-width: 800px) 800px, 1280px" alt="" />”
+	$image->print();
+
+HTMLImage can also recognize a shorthand version o’ srcset using : as delimiter following the following pattern:
+
+	[$path].[$extension]:[$width]x[$height],[$width]x[$height][…]
+
+For each comma-delimited size, height is optional. Not providing a height will simply use the base filename as the full filename & will just use the width as the width tag that goes after the filename.
+
+For example, to print out the same content as the previous example, you can type out ’stead:
+
+	use WaughJ\HTMLImage\HTMLImage;
+
+	$image = new HTMLImage
+	(
+		"demo.png",
+		null,
+		[ 'srcset' => 'demo.png:300x300,800x500,1280' ]
+	);
+
+	// Will output “<img src="demo.png" srcset="demo-300x300.png 300w, demo-800x500.png 800w, demo.png 1280w" sizes="(max-width: 300px) 300px, (max-width: 800px) 800px, 1280px" alt="" />”
+	$image->print();
+
+Malformed srcset values will throw a MalformedSrcSetStringException. These are srcset values that don’t follow the standard HTML format or the shorthand format.
+
+If for some reason you want to, you can pass in an array o’ SrcSetItem instances ’stead o’ a string:
+
+	use WaughJ\HTMLImage\HTMLImage;
+	use WaughJ\HTMLImage\SrcSetItem;
+
+	$image = new HTMLImage
+	(
+		"demo.png",
+		null,
+		[ 'srcset' => [ new SrcSetItem( 'demo', 300, 300, 'png' ), new SrcSetItem( 'demo', 800, 500, 'png' ), new SrcSetItem( 'demo', 1280, -1, 'png' ) ] ]
+	);
+
+	// Will output “<img src="demo.png" srcset="demo-300x300.png 300w, demo-800x500.png 800w, demo.png 1280w" sizes="(max-width: 300px) 300px, (max-width: 800px) 800px, 1280px" alt="" />”
+	$image->print();
+
+As shown, to make a srcset item keep the base filename & only use the width as a width tag, pass -1 for height.
+
+You can also pass in a SrcSet instance instead o’ an array, which can take in an array o’ SrcSetItem instances, an array o’ strings, or a string. ( All o’ the options shown here are simply passed into a SrcSet constructor, including a SrcSet instance, in the backend, anyway ).
+
 ### Error Handling
 
 The HTMLImage constructor may throw a WaughJ\FileLoader\MissingFileException exception if it is set to show a version tag ( the default ) & it can't access the file to get its modified date ( usually caused by the file not being where it's expected to be ). This exception includes in its getFallbackContent method with an HTMLImage object with the versionless source for easy recovery like so ( while the getFilename method can be used to find where it's trying to find the file on the server ):
@@ -84,3 +145,5 @@ The HTMLImage constructor may throw a WaughJ\FileLoader\MissingFileException exc
 	}
 
 	$image->print(); // Will still work, e'en if an exception is thrown.
+
+As mentioned in the Responsive Images section, malformed srcset values will throw a MalformedSrcSetStringException.

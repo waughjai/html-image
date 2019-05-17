@@ -69,7 +69,7 @@ class SrcSet
 					}
 					else if ( is_string( $source ) )
 					{
-						$list[] = self::generateSrcSetItemFromString( $source, $loader, $show_version );
+						$list[] = self::generateSrcSetItemFromStringLongFormat( $source, $loader, $show_version );
 					}
 				}
 				catch ( MissingFileException $e )
@@ -89,25 +89,65 @@ class SrcSet
 
 		private static function generateSrcSetFromString( string $srcset, $loader, $show_version ) : array
 		{
+			if ( strpos( $srcset, ':' ) !== false )
+			{
+				return self::generateSrcSetItemFromStringShortFormat( $srcset, $loader, $show_version );
+			}
 			$list = [];
 			$string_list = preg_split( "/,[\s]*/", $srcset );
 			return self::generateSrcSetFromArray( $string_list, $loader, $show_version );
 		}
 
-		private static function generateSrcSetItemFromString( string $source_string, $loader, $show_version ) : SrcSetItem
+		private static function generateSrcSetItemFromStringShortFormat( string $source_string, $loader, $show_version ) : array
 		{
-			$parts = explode( ' ', $source_string );
-			if ( count( $parts ) < 2 )
+			$srcset = [];
+
+			$parts = explode( ':', $source_string );
+			// NOTE: We don’t need to check for less than 2, since we know from an earlier check that this string must have a’least 1 :, & thus a’least 1 split.
+			if ( count( $parts ) > 2 )
 			{
 				throw new MalformedSrcSetStringException( $source_string );
 			}
-			$width1 = intval( str_replace( 'w', '', array_pop( $parts ) ) ); // Width is last space-divided chunk with "w" remove & forced into an integer.
+
+			$filename_half = $parts[ 0 ];
+			$sizes_half = $parts[ 1 ];
+
+			$filename_parts = explode( '.', $filename_half );
+			$extension = ( count( $filename_parts ) === 1 ) ? '' : array_pop( $filename_parts );
+			$basename = implode( '.', $filename_parts );
+
+			$sizes_items = explode( ',', $sizes_half );
+			foreach ( $sizes_items as $size_item )
+			{
+				$size_item_pieces = explode( 'x', $size_item );
+				$width = intval( $size_item_pieces[ 0 ] );
+				$height = ( count( $size_item_pieces ) === 1 ) ? -1 : intval( $size_item_pieces[ 1 ] );
+
+				$srcset[] = new SrcSetItem( $basename, $width, $height, $extension, $loader, $show_version ?? true );
+			}
+
+			return $srcset;
+		}
+
+		private static function generateSrcSetItemFromStringLongFormat( string $source_string, $loader, $show_version ) : SrcSetItem
+		{
+			$parts = explode( ' ', $source_string );
+			$part_count = count( $parts );
+			if ( $part_count > 2 )
+			{
+				throw new MalformedSrcSetStringException( $source_string );
+			}
+
+			$width_tag = ( $part_count === 2 )
+				? intval( str_replace( 'w', '', array_pop( $parts ) ) ) // Width is last space-divided chunk with "w" remove & forced into an integer.
+				: null;
+
 			$filename = implode( '', $parts ); // Combine all the rest o' the chunks as the filename.
 
 			// Fallback data in case string is malformed.
 			$base_filename = $filename;
 			$extension = '';
-			$width = $width1;
+			$width = $width_tag;
 			$height = -1;
 
 			// PHP doesn't allow for breakable block, so this with a break @ the very end is the equivalent.
@@ -145,16 +185,19 @@ class SrcSet
 
 				$width2 = intval( array_pop( $hyphen_divided ) ); // Extract width & force into int.
 
-				if ( $width2 !== $width1 ) { break; } // This gives us 2 widths. If the widths are different, the user is following a different scheme & we should leave it @ that & give up.
-
 				// String is valid, & so we set fallback data with newly-found data.
 				$base_filename = implode( '-', $hyphen_divided ); // All the remaining text after all the previous extractions.
-				$width = $width1;
+				$width = $width2;
 				$height = $height_str;
 				break;
 			}
 
-			return new SrcSetItem( $base_filename, $width, $height, $extension, $loader, $show_version ?? true );
+			if ( $width === null )
+			{
+				throw new MalformedSrcSetStringException( $source_string );
+			}
+
+			return new SrcSetItem( $base_filename, $width, $height, $extension, $loader, $show_version ?? true, true, ( $width_tag === null ) ? -1 : $width_tag );
 		}
 
 		private static function applyLoaderToList( array $srcset, $loader, $show_version ) : array

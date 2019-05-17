@@ -18,6 +18,7 @@ class HTMLImageTest extends TestCase
 		$img = new HTMLImage( "$name.png" );
 		$this->assertStringContainsString( '<img', $img->getHTML() );
 		$this->assertStringContainsString( " src=\"$name.png\"", $img->getHTML() );
+		$this->assertStringNotContainsString( ' sizes="', $img->getHTML() );
 	}
 
 	public function testAlt()
@@ -54,24 +55,54 @@ class HTMLImageTest extends TestCase
 	{
 		$image = new HTMLImage( "demo.png", null, [ 'srcset' => 'demo-300x300.png 300w, demo-800x500.png 800w, demo.png 1280w' ] );
 		$this->assertStringContainsString( " srcset=\"demo-300x300.png 300w, demo-800x500.png 800w, demo.png 1280w", $image->getHTML() );
+		$this->assertStringContainsString( ' sizes="(max-width: 300px) 300px, (max-width: 800px) 800px, 1280px"', $image->getHTML() );
+		$this->assertStringNotContainsString( ' autosized="', $image->getHTML() );
 
 		$loader = new FileLoader([ 'directory-url' => 'https://www.example.com', 'directory-server' => getcwd(), 'shared-directory' => 'tests/img' ]);
 		$image = $image->changeLoader( $loader );
 		$this->assertStringContainsString( " srcset=\"https://www.example.com/tests/img/demo-300x300.png?m=", $image->getHTML() );
 		$this->assertStringContainsString( "300w, https://www.example.com/tests/img/demo-800x500.png?m=", $image->getHTML() );
+		$this->assertStringNotContainsString( ' autosized="', $image->getHTML() );
 
 		$image = $image->setAttribute( 'srcset', 'demo-300x300.png 300w, demo-800x500.png 800w' );
 		$this->assertStringContainsString( " srcset=\"https://www.example.com/tests/img/demo-300x300.png?m=", $image->getHTML() );
 		$this->assertStringContainsString( "300w, https://www.example.com/tests/img/demo-800x500.png?m=", $image->getHTML() );
-		$image = $image->setAttribute( 'srcset', [ new SrcSetItem( 'demo', 300, 300, 'png' ), new SrcSetItem( 'demo', 800, 500, 'png' ) ] );
+		$this->assertStringContainsString( ' sizes="(max-width: 300px) 300px, 800px"', $image->getHTML() );
+		$this->assertStringNotContainsString( ' autosized="', $image->getHTML() );
+
+		$image = $image->setAttribute( 'srcset', [ new SrcSetItem( 'demo', 300, 300, 'png' ), new SrcSetItem( 'demo', 800, 500, 'png' ) ] )->setAttribute( 'sizes', 'blubbadub' );
 		$this->assertStringContainsString( " srcset=\"https://www.example.com/tests/img/demo-300x300.png?m=", $image->getHTML() );
 		$this->assertStringContainsString( "300w, https://www.example.com/tests/img/demo-800x500.png?m=", $image->getHTML() );
+		$this->assertStringContainsString( ' sizes="blubbadub"', $image->getHTML() );
+		$this->assertStringNotContainsString( ' autosized="', $image->getHTML() );
+
+		$image = new HTMLImage( "demo.png", null, [ 'srcset' => 'demo-300x300.png, demo-800x500.png, demo.png 1280w' ] );
+		$this->assertStringContainsString( " srcset=\"demo-300x300.png 300w, demo-800x500.png 800w, demo.png 1280w", $image->getHTML() );
+		$this->assertStringContainsString( ' sizes="(max-width: 300px) 300px, (max-width: 800px) 800px, 1280px"', $image->getHTML() );
+		$this->assertStringNotContainsString( ' autosized="', $image->getHTML() );
+
+		$image = new HTMLImage( "demo.png", null, [ 'srcset' => 'demo.png:300x300,800x500,1280' ] );
+		$this->assertStringContainsString( " srcset=\"demo-300x300.png 300w, demo-800x500.png 800w, demo.png 1280w", $image->getHTML() );
+		$this->assertStringContainsString( ' sizes="(max-width: 300px) 300px, (max-width: 800px) 800px, 1280px"', $image->getHTML() );
+		$this->assertStringNotContainsString( ' autosized="', $image->getHTML() );
 	}
 
-	public function testMalformedSrcSet()
+	public function testMalformedSrcSet1()
 	{
 		$this->expectException( MalformedSrcSetStringException::class );
-		$image = new HTMLImage( "demo.png", null, [ 'srcset' => 'demo-300x300.png, demo-800x500.png 800w, demo.png 1280w' ] );
+		$image = new HTMLImage( "demo.png", null, [ 'srcset' => 'jka s fdndskx.xxnf,a.sd.wf wk,jn' ] );
+	}
+
+	public function testMalformedSrcSet2()
+	{
+		$this->expectException( MalformedSrcSetStringException::class );
+		$image = new HTMLImage( "demo.png", null, [ 'srcset' => 'adsfgfhfgh,fghfgjgh,jkghjfsdf,' ] );
+	}
+
+	public function testMalformedSrcSet3()
+	{
+		$this->expectException( MalformedSrcSetStringException::class );
+		$image = new HTMLImage( "demo.png", null, [ 'srcset' => 'adsfgfhfgh fghfgjgh, jkghjfsdf' ] );
 	}
 
 	public function testAttributeChanges()
