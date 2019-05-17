@@ -173,6 +173,22 @@ class HTMLImageTest extends TestCase
 		$this->assertStringContainsString( " srcset=\"https://www.example.com/tests/img/demo-300x300.png?m=", $image->getHTML() );
 		$this->assertStringContainsString( "https://www.example.com/tests/img/demo-800x500.png?m=", $image->getHTML() );
 		$this->assertStringContainsString( "https://www.example.com/tests/img/demo-1280x900.png 1280w\"", $image->getHTML() );
+
+		try
+		{
+			$image = new HTMLImage( 'demo-300x300', $loader, [ 'class' => 'seasonal', 'srcset' => 'demo.png:300x300,800x500,1280x900' ] );
+		}
+		catch ( MissingFileException $e )
+		{
+			$image = $e->getFallbackContent();
+		}
+		$this->assertStringContainsString( '<img', $image->getHTML() );
+		$this->assertStringContainsString( " src=\"https://www.example.com/tests/img/demo-300x300.png?m=", $image->getHTML() );
+		$this->assertStringContainsString( ' class="seasonal"', $image->getHTML() );
+		$this->assertStringContainsString( ' alt=""', $image->getHTML() );
+		$this->assertStringContainsString( " srcset=\"https://www.example.com/tests/img/demo-300x300.png?m=", $image->getHTML() );
+		$this->assertStringContainsString( "https://www.example.com/tests/img/demo-800x500.png?m=", $image->getHTML() );
+		$this->assertStringContainsString( "https://www.example.com/tests/img/demo-1280x900.png 1280w\"", $image->getHTML() );
 	}
 
 	public function testGetSource()

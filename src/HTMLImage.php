@@ -38,7 +38,14 @@ class HTMLImage
 			catch ( MissingFileException $e )
 			{
 				$srcset = $e->getFallbackContent();
-				array_merge( $missing_files, $e->getFilename() );
+				if ( !is_array( $e->getFilename() ) )
+				{
+					$missing_files[] = $e->getFilename();
+				}
+				else
+				{
+					array_merge( $missing_files, $e->getFilename() );
+				}
 			}
 
 			$other_attributes = self::generateSizes( $other_attributes, $srcset );

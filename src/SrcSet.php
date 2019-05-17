@@ -21,7 +21,8 @@ class SrcSet
 					    ( self::testIsThisType( $srcset ) ) ? self::applyLoaderToList( $srcset->getSources(), $loader, $show_version )
 					: ( ( is_string( $srcset ) )            ? self::generateSrcSetFromString( $srcset, $loader, $show_version )
 					: ( ( is_array( $srcset )  )            ? self::generateSrcSetFromArray( $srcset, $loader, $show_version )
-											                : [] ));
+				    : ( ( self::testIsItemType( $srcset ) ) ? [ $srcset ]
+											                : [] )));
 			}
 			catch ( MissingFileException $e )
 			{
@@ -117,13 +118,28 @@ class SrcSet
 			$basename = implode( '.', $filename_parts );
 
 			$sizes_items = explode( ',', $sizes_half );
+
+			$missing_files = [];
 			foreach ( $sizes_items as $size_item )
 			{
 				$size_item_pieces = explode( 'x', $size_item );
 				$width = intval( $size_item_pieces[ 0 ] );
 				$height = ( count( $size_item_pieces ) === 1 ) ? -1 : intval( $size_item_pieces[ 1 ] );
 
-				$srcset[] = new SrcSetItem( $basename, $width, $height, $extension, $loader, $show_version ?? true );
+				try
+				{
+					$srcset[] = new SrcSetItem( $basename, $width, $height, $extension, $loader, $show_version ?? true );
+				}
+				catch ( MissingFileException $e )
+				{
+					$srcset[] = $e->getFallbackContent();
+					$missing_files[] = $e->getFilename();
+				}
+			}
+
+			if ( !empty( $missing_files ) )
+			{
+				throw new MissingFileException( $missing_files, $srcset );
 			}
 
 			return $srcset;
@@ -177,7 +193,10 @@ class SrcSet
 
 				if ( self::testNoDivision( $x_divided ) ) { break; } // If no X, then string is malformed. Give up.
 
-				$height_str = intval( array_pop( $x_divided ) ); // Height is text after last x, forced into an integer.
+				$height_str = array_pop( $x_divided ); // Height is text after last x.
+
+				if ( empty( $height_str ) ) { break; } // If nothing after x, string is some different pattern. Give up.
+
 				$heightless_filename = implode( 'x', $x_divided ); // Keep the rest o' the text left o' the last x. ( ¡Obviously our filename may have many mo' x's! )
 				$hyphen_divided = explode( '-', $heightless_filename ); // Width string is right o' last hyphen before last x.
 
@@ -188,7 +207,7 @@ class SrcSet
 				// String is valid, & so we set fallback data with newly-found data.
 				$base_filename = implode( '-', $hyphen_divided ); // All the remaining text after all the previous extractions.
 				$width = $width2;
-				$height = $height_str;
+				$height = intval( $height_str );
 				break;
 			}
 
@@ -223,6 +242,11 @@ class SrcSet
 		private static function testIsThisType( $subject ) : bool
 		{
 			return is_object( $subject ) && get_class( $subject ) === self::class;
+		}
+
+		private static function testIsItemType( $subject ) : bool
+		{
+			return is_object( $subject ) && get_class( $subject ) === SrcSetItem::class;
 		}
 
 		private $srcset;
