@@ -147,3 +147,32 @@ The HTMLImage constructor may throw a WaughJ\FileLoader\MissingFileException exc
 	$image->print(); // Will still work, e'en if an exception is thrown.
 
 As mentioned in the Responsive Images section, malformed srcset values will throw a MalformedSrcSetStringException.
+
+## Changelog
+
+### 0.9.0
+* Make Autogenerate Sizes Attribute When Srcset is Set But Not Sizes & Implement Shorthand Format for Srcset
+
+### 0.8.0
+* Revamp SrcSet Handling & Error Handling
+
+### 0.7.0
+* Optimize By Adding HTML Cache
+
+### 0.6.0
+* Revamp Error Handling for Missing Files
+
+### 0.5.0
+* Add "setAttribute" & "addToClass" Methods
+
+### 0.4.0
+* Add Ability to Just Get Source
+
+### 0.3.0
+* Add Ability to Work with FileLoaders
+
+### 0.2.0
+* Add Auto String Conversion & Print Method
+
+### 0.1.0
+* Initial Version

@@ -6,7 +6,7 @@ namespace WaughJ\HTMLImage;
 use WaughJ\FileLoader\FileLoader;
 use WaughJ\FileLoader\MissingFileException;
 use WaughJ\HTMLAttributeList\HTMLAttributeList;
-use function \WaughJ\TestHashItem\TestHashItemString;
+use \WaughJ\TestHashItem\TestHashItem;
 
 class HTMLImage
 {
@@ -72,7 +72,7 @@ class HTMLImage
 
 		private static function configureHTMLAttributes( array $other_arguments ) : HTMLAttributeList
 		{
-			$other_arguments[ 'alt' ] = TestHashItemString( $other_arguments, 'alt', '' );
+			$other_arguments[ 'alt' ] = TestHashItem::getString( $other_arguments, 'alt', '' );
 			unset( $other_arguments[ 'show-version' ] ); // We don't want this to accidentally become an HTML attribute.
 			unset( $other_arguments[ 'srcset' ] ); // Due to the complexity o' sources & the file loader, we handle this attribute manually.
 			unset( $other_arguments[ 'autosized' ] ); // We don't want this to accidentally become an HTML attribute.
