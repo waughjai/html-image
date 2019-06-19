@@ -52,22 +52,9 @@ class SrcSetItem
 
 			try
 			{
-
-				if ( !empty( $loader_extension ) && strpos( $absolute_filename, '.png' ) !== false )
-				{
-					echo 'helloooo';
-					throw new \Exception( "ASKJFNSAKJNFKJL" );
-				}
-
 				$absolute_filename = ( $loader !== null )
 					?	( $show_version ) ? $loader->getSourceWithVersion( $absolute_filename ) : $loader->getSource( $absolute_filename )
 					: $absolute_filename;
-
-				if ( strpos( $absolute_filename, '.png.png' ) !== false )
-				{
-					echo 'helloooo';
-					throw new \Exception( "ASKJFNSAKJNFKJL" );
-				}
 			}
 			catch ( MissingFileException $e )
 			{
